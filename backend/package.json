@@ -1,0 +1,31 @@
+{
+  "name": "learnjectory-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "NODE_ENV=test node --test tests/api.test.js tests/part1b.test.js tests/part2a.test.js tests/part2b.test.js tests/part2b.unit.test.js tests/analytics.test.js tests/dashboard.test.js tests/settings.test.js tests/achievementNotify.test.js tests/communityNotify.test.js tests/notifications.test.js tests/notificationHistory.test.js tests/notificationsLive.test.js",
+    "seed": "node database/db.js",
+    "test:career": "NODE_ENV=test NODE_PATH=tests/_shims/modules node --test tests/careerUpgrade.test.js",
+    "test:2b-unit": "NODE_ENV=test NODE_PATH=tests/_shims/modules node --test tests/part2b.unit.test.js",
+    "test:dashboard": "NODE_ENV=test NODE_PATH=tests/_shims/modules node --test tests/dashboard.test.js",
+    "test:settings": "NODE_ENV=test NODE_PATH=tests/_shims/modules node --test tests/settings.test.js",
+    "test:achnotify": "NODE_ENV=test NODE_PATH=tests/_shims/modules node --test tests/achievementNotify.test.js",
+    "test:notifstore": "NODE_ENV=test NODE_PATH=tests/_shims/modules node --test tests/notifications.test.js",
+    "test:live": "NODE_ENV=test NODE_PATH=tests/_shims/modules node --test tests/notificationsLive.test.js",
+    "test:history": "NODE_ENV=test NODE_PATH=tests/_shims/modules node --test tests/notificationHistory.test.js",
+    "test:commnotify": "NODE_ENV=test NODE_PATH=tests/_shims/modules node --test tests/communityNotify.test.js",
+    "test:analytics": "NODE_ENV=test NODE_PATH=tests/_shims/modules node --test tests/analytics.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.5.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
+    "learnjectory": "file:..",
+    "pdf-parse": "1.1.1"
+  }
+}

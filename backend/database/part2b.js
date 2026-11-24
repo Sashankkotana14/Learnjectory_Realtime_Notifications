@@ -1,0 +1,24 @@
+// Part 2B schema: resumes + saved jobs (Opportunities), comments/likes/collaboration (Community), folders/files/links (My Vault).
+// Idempotent: safe to run on every start and on an existing database (columns are added, no data is touched).
+module.exports = function part2b(db) {
+  const addCol = (t, name, def) => { if (!db.prepare(`PRAGMA table_info(${t})`).all().some(c => c.name === name)) db.exec(`ALTER TABLE ${t} ADD COLUMN ${name} ${def}`); };
+  db.exec(`CREATE TABLE IF NOT EXISTS resumes(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL,filename TEXT NOT NULL,file_type TEXT NOT NULL,size INTEGER DEFAULT 0,method TEXT DEFAULT '',parsed TEXT NOT NULL,uploaded_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS saved_jobs(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL,source TEXT NOT NULL,external_id TEXT NOT NULL,title TEXT NOT NULL,company TEXT DEFAULT '',location TEXT DEFAULT '',url TEXT NOT NULL,description TEXT DEFAULT '',salary TEXT DEFAULT '',job_type TEXT DEFAULT '',remote INTEGER DEFAULT 0,tags TEXT DEFAULT '',posted_at TEXT,status TEXT NOT NULL DEFAULT 'saved',notes TEXT DEFAULT '',saved_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT,UNIQUE(user_id,source,external_id));
+CREATE TABLE IF NOT EXISTS community_comments(id INTEGER PRIMARY KEY AUTOINCREMENT,post_id INTEGER NOT NULL,user_id INTEGER NOT NULL,body TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT);
+CREATE TABLE IF NOT EXISTS community_likes(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL,target_type TEXT NOT NULL,target_id INTEGER NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP,UNIQUE(user_id,target_type,target_id));
+CREATE TABLE IF NOT EXISTS community_collab(id INTEGER PRIMARY KEY AUTOINCREMENT,post_id INTEGER NOT NULL,user_id INTEGER NOT NULL,message TEXT DEFAULT '',status TEXT NOT NULL DEFAULT 'pending',created_at TEXT DEFAULT CURRENT_TIMESTAMP,decided_at TEXT,UNIQUE(post_id,user_id));
+CREATE TABLE IF NOT EXISTS vault_folders(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL,name TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS vault_files(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL,folder_id INTEGER,original_name TEXT NOT NULL,stored_name TEXT NOT NULL,mime TEXT NOT NULL,ext TEXT NOT NULL,size INTEGER NOT NULL,category TEXT DEFAULT '',tags TEXT DEFAULT '',description TEXT DEFAULT '',created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT);
+CREATE TABLE IF NOT EXISTS vault_links(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL,folder_id INTEGER,title TEXT NOT NULL,url TEXT NOT NULL,category TEXT DEFAULT '',tags TEXT DEFAULT '',notes TEXT DEFAULT '',created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT)`);
+  // Existing generic tables are extended in place, so notes/posts written before 2B stay.
+  [['title', "TEXT DEFAULT ''"], ['category', "TEXT DEFAULT 'General'"], ['kind', "TEXT DEFAULT 'discussion'"], ['tags', "TEXT DEFAULT ''"], ['updated_at', 'TEXT'], ['solved', 'INTEGER DEFAULT 0'], ['accepted_comment_id', 'INTEGER'], ['collab_open', 'INTEGER DEFAULT 1'], ['skills_needed', "TEXT DEFAULT ''"], ['max_members', 'INTEGER'], ['link_url', "TEXT DEFAULT ''"]].forEach(([n, d]) => addCol('community_posts', n, d));
+  [['folder_id', 'INTEGER'], ['category', "TEXT DEFAULT ''"], ['tags', "TEXT DEFAULT ''"], ['pinned', 'INTEGER DEFAULT 0'], ['updated_at', 'TEXT']].forEach(([n, d]) => addCol('vault', n, d));
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_resume_user ON resumes(user_id,id);CREATE INDEX IF NOT EXISTS idx_sjob_user ON saved_jobs(user_id,status);
+CREATE INDEX IF NOT EXISTS idx_ccom_post ON community_comments(post_id);CREATE INDEX IF NOT EXISTS idx_clike_target ON community_likes(target_type,target_id);CREATE INDEX IF NOT EXISTS idx_ccollab_post ON community_collab(post_id);
+CREATE INDEX IF NOT EXISTS idx_cpost_cat ON community_posts(category,kind);CREATE UNIQUE INDEX IF NOT EXISTS idx_vfolder_name ON vault_folders(user_id,lower(name));
+CREATE INDEX IF NOT EXISTS idx_vfile_user ON vault_files(user_id);CREATE INDEX IF NOT EXISTS idx_vlink_user ON vault_links(user_id)`);
+  // Earlier phases seeded invented demo rows for these modules. Remove exactly those rows (exact text match); anything the user typed themselves stays.
+  db.prepare('DELETE FROM opportunities WHERE (title=? AND org=?) OR (title=? AND org=?) OR (title=? AND org=?)').run('Google Summer of Code', 'Google', 'Hackathon 2026', 'MLH', 'Frontend Internship', 'Startup Co');
+  db.prepare('DELETE FROM community_posts WHERE content IN (?,?)').run('Anyone up for a study group this weekend?', 'Shared my notes on linear algebra!');
+  db.prepare('DELETE FROM vault WHERE title=? AND content=?').run('Important links', 'Keep important links and notes here.');
+};
