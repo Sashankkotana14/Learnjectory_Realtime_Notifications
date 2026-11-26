@@ -1,5 +1,8 @@
+
 require('dotenv').config();
-const express = require('express'), cors = require('cors');
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
 require('./database/db');
 
 const app = express();
@@ -15,38 +18,36 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(',')
-      : true
-  }),
-  express.json({ limit: '100kb' })
-);
+app.use(cors({
+  origin: process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',')
+    : true
+}));
 
-// Backend root
-app.get('/', (req, res) => {
-  res.json({
-    ok: true,
-    message: 'Learnjectory Backend is running!'
-  });
-});
+app.use(express.json({ limit: '100kb' }));
 
-// API root
+// API routes
 app.get('/api', (req, res) => {
-  res.json({
-    ok: true,
-    message: 'Learnjectory API is running!'
-  });
+  res.json({ ok: true, message: 'Learnjectory API is running!' });
 });
 
-// Health check
 app.get('/api/health', (req, res) => {
   res.json({ ok: true });
 });
 
-// Existing API routes
 app.use('/api', require('./routes/api'));
+
+// Serve frontend
+const frontendPath = path.join(__dirname, '../frontend/dist');
+
+app.use(express.static(frontendPath));
+
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
 
 // Error handling
 app.use((err, req, res, next) => {
@@ -70,9 +71,6 @@ module.exports = app;
 
 if (require.main === module) {
   app.listen(process.env.PORT || 5000, () => {
-    console.log(
-      'Learnjectory API on http://localhost:' +
-      (process.env.PORT || 5000)
-    );
+    console.log('Learnjectory running on port ' + (process.env.PORT || 5000));
   });
 }
